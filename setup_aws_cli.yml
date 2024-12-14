@@ -1,0 +1,36 @@
+---
+- name: Install AWS CLI
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install dependencies for AWS CLI
+      apt:
+        name:
+          - unzip
+          - curl
+        state: present
+
+    - name: Download AWS CLI version 2
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+      args:
+        chdir: /tmp
+
+    - name: Install AWS CLI
+      shell: ./aws/install
+      args:
+        chdir: /tmp
+
+    - name: Verify AWS CLI installation
+      command: aws --version
+      register: aws_version
+
+    - name: Display AWS CLI version
+      debug:
+        var: aws_version.stdout

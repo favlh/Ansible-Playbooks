@@ -1,0 +1,73 @@
+---
+- name: Setup Google Cloud SDK and extensions
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Ensure required dependencies are installed (Debian/Ubuntu)
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - curl
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Ensure required dependencies are installed (RHEL/CentOS)
+      yum:
+        name:
+          - ca-certificates
+          - gnupg
+          - curl
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'yum'
+
+    - name: Add Google Cloud SDK repository key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Add Google Cloud SDK repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main"
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install Google Cloud SDK
+      apt:
+        name: google-cloud-sdk
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install Google Cloud SDK
+      yum:
+        name: google-cloud-sdk
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'yum'
+
+    - name: Install additional Google Cloud components
+      shell: |
+        gcloud components install {{ item }} -q
+      loop:
+        - kubectl
+        - alpha
+        - beta
+        - app-engine-java
+        - app-engine-python
+        - app-engine-go
+        - cloud-build-local
+        - pubsub-emulator
+        - bigtable
+        - bigquery
+        - datalab
+        - gsutil
+      args:
+        creates: /usr/bin/gcloud
+
+    - name: Authenticate gcloud
+      shell: |
+        gcloud auth login
+      args:
+        creates: ~/.config/gcloud

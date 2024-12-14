@@ -1,0 +1,79 @@
+---
+- name: Setup servers and install tools
+  hosts: all
+  become: true
+  tasks:
+    - name: Update package lists (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Upgrade all packages (Debian/Ubuntu)
+      apt:
+        upgrade: dist
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install common tools
+      package:
+        name:
+          - curl
+          - git
+          - vim
+          - htop
+          - wget
+          - unzip
+        state: present
+
+    - name: Install UFW
+      package:
+        name: ufw
+        state: present
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Allow HTTP and HTTPS
+      ufw:
+        rule: allow
+        port:
+          - 80
+          - 443
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        enabled: yes
+
+    - name: Install Docker
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-`uname -s`-`uname -m`
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Install Nginx
+      package:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true

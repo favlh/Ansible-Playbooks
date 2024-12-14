@@ -1,0 +1,11 @@
+---
+- name: Create default ansible.cfg for servers
+  hosts: localhost
+  tasks:
+    - name: Create Ansible project directory
+      file:
+        path: ~/ansible-project
+        state: directory
+
+    - name: Generate default ansible.cfg
+      command: ansible-config init --config ~/ansible-project/ansible.cfg
