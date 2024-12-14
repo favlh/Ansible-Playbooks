@@ -1,0 +1,54 @@
+---
+- name: Update, upgrade, and clean packages for major distros
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Checking OS
+      setup:
+        filter: ansible_os_family
+
+    - name: Update package lists
+      ansible.builtin.package:
+        update_cache: true
+      when: ansible_os_family in ['Debian', 'RedHat', 'Suse']
+
+    - name: Upgrade packages (Debian/Ubuntu)
+      ansible.builtin.command:
+        cmd: apt-get upgrade -y
+      when: ansible_os_family == 'Debian'
+
+    - name: Upgrade packages (RHEL/Fedora)
+      ansible.builtin.command:
+        cmd: dnf upgrade -y
+      when: ansible_os_family == 'RedHat'
+
+    - name: Upgrade packages (openSUSE)
+      ansible.builtin.command:
+        cmd: zypper up -y
+      when: ansible_os_family == 'Suse'
+
+    - name: Upgrade packages (Arch)
+      ansible.builtin.command:
+        cmd: pacman -Syu --noconfirm
+      when: ansible_distribution == 'Archlinux'
+
+    - name: Clean packages (Debian/Ubuntu)
+      ansible.builtin.command:
+        cmd: apt-get autoremove -y && apt-get clean
+      when: ansible_os_family == 'Debian'
+
+    - name: Clean packages (RHEL/Fedora)
+      ansible.builtin.command:
+        cmd: dnf autoremove -y && dnf clean all
+      when: ansible_os_family == 'RedHat'
+
+    - name: Clean packages (openSUSE)
+      ansible.builtin.command:
+        cmd: zypper clean -a
+      when: ansible_os_family == 'Suse'
+
+    - name: Clean packages (Arch)
+      ansible.builtin.command:
+        cmd: pacman -Sc --noconfirm
+      when: ansible_distribution == 'Archlinux'

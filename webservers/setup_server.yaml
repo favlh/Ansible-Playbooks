@@ -1,0 +1,105 @@
+---
+- name: Setup Nginx, Database, PHP, and WordPress for webservers
+  hosts: all
+  become: yes
+  vars:
+    wordpress_db_name: wordpress
+    wordpress_db_user: wp_user
+    wordpress_db_password: wp_password
+    wordpress_db_host: localhost
+    wordpress_dir: /var/www/html/wordpress
+    nginx_site_conf: /etc/nginx/sites-available/wordpress
+
+  tasks:
+    # Install Nginx, MySQL, PHP, and required packages
+    - name: Install Nginx, MySQL, PHP, and required packages
+      apt:
+        name:
+          - nginx
+          - mysql-server
+          - php-fpm
+          - php-mysql
+          - php-cli
+          - php-curl
+          - php-xml
+          - php-mbstring
+          - unzip
+          - wget
+        state: present
+        update_cache: yes
+
+    # Start and enable Nginx and MySQL
+    - name: Ensure Nginx and MySQL are running and enabled
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - nginx
+        - mysql
+
+    # Create MySQL Database and User for WordPress
+    - name: Create WordPress database and user
+      mysql_db:
+        name: "{{ wordpress_db_name }}"
+        state: present
+      become_user: root
+
+    - name: Create MySQL user for WordPress
+      mysql_user:
+        name: "{{ wordpress_db_user }}"
+        password: "{{ wordpress_db_password }}"
+        priv: "{{ wordpress_db_name }}.*:ALL"
+        state: present
+      become_user: root
+
+    # Download and extract WordPress
+    - name: Download WordPress
+      get_url:
+        url: https://wordpress.org/latest.tar.gz
+        dest: /tmp/wordpress.tar.gz
+
+    - name: Extract WordPress
+      unarchive:
+        src: /tmp/wordpress.tar.gz
+        dest: "{{ wordpress_dir }}"
+        remote_src: yes
+
+    # Set proper permissions for WordPress directory
+    - name: Set proper permissions for WordPress directory
+      file:
+        path: "{{ wordpress_dir }}"
+        state: directory
+        mode: '0755'
+        recurse: yes
+
+    # Configure Nginx for WordPress
+    - name: Create Nginx site configuration for WordPress
+      template:
+        src: wordpress_nginx.conf.j2
+        dest: "{{ nginx_site_conf }}"
+        mode: '0644'
+
+    - name: Enable WordPress site in Nginx
+      command: nginx -s reload
+      notify:
+        - Restart Nginx
+
+    # Configure wp-config.php for WordPress
+    - name: Configure wp-config.php for WordPress
+      template:
+        src: wp-config.php.j2
+        dest: "{{ wordpress_dir }}/wp-config.php"
+        mode: '0644'
+
+    # Clean up downloaded WordPress tar
+    - name: Clean up WordPress tar
+      file:
+        path: /tmp/wordpress.tar.gz
+        state: absent
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

@@ -1,0 +1,7 @@
+---
+- name: Ansible Playbook To Reboot The Servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Reboot the server
+      command: /sbin/reboot
