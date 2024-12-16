@@ -1,0 +1,34 @@
+---
+- name: Setup Node.js Environment
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install curl
+      package:
+        name: curl
+        state: present
+
+    - name: Add Node.js PPA
+      command: curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+      args:
+        warn: false
+
+    - name: Install Node.js
+      package:
+        name: nodejs
+        state: present
+
+    - name: Verify Node.js Installation
+      command: node --version
+      register: node_version
+
+    - name: Display Node.js Version
+      debug:
+        msg: "Installed Node.js version: {{ node_version.stdout }}"
+
+    - name: Install global npm packages
+      npm:
+        name: 
+          - pm2
+          - yarn
+        state: present
