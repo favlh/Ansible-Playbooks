@@ -1,0 +1,41 @@
+---
+- name: Setup Firewall with UFW
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install UFW
+      package:
+        name: ufw
+        state: present
+
+    - name: Allow SSH on port 22
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Allow FTP on port 20
+      ufw:
+        rule: allow
+        port: 20
+        proto: tcp
+
+    - name: Allow HTTP on port 80
+      ufw:
+        rule: allow
+        port: 80
+        proto: tcp
+
+    - name: Allow HTTPS on port 443
+      ufw:
+        rule: allow
+        port: 443
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        enabled: yes
+
+    - name: Ensure UFW is active
+      command: ufw status verbose
